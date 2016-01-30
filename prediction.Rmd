@@ -1,0 +1,74 @@
+---
+title: "Prediction Assignment Writeup"
+author: "Shail"
+output:
+  pdf_document: default
+  html_document:
+    keep_md: yes
+---
+###Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
+
+In this project, goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+
+
+
+
+### Load and clean the data
+Load the data and remove unneeded variable with user information, time and undefined
+
+```{r, echo=TRUE}
+library(knitr)
+library(caret)
+library(e1071)
+library(randomForest) 
+
+pmlTrain <- read.csv("pml-training.csv", na.strings = c("NA", ""))
+pmlTest <- read.csv("pml-testing.csv", na.strings = c("NA", ""))
+
+pmlTrain <- pmlTrain[, colSums(is.na(pmlTrain)) == 0]
+pmlTest <- pmlTest[, colSums(is.na(pmlTest)) == 0]
+
+pmlTrain <- pmlTrain[, -c(1:7)]
+dim(pmlTrain)
+pmlTest <- pmlTest[, -c(1:7)]
+dim(pmlTest)
+```
+
+
+
+###Partition the data
+```{r, echo=TRUE}
+inTrain<-createDataPartition(y=pmlTrain$classe, p=0.75,list=F)
+training<-pmlTrain[inTrain,] 
+test<-pmlTrain[-inTrain,] 
+dim(training)
+dim(test)
+```
+
+
+###Prediction Process
+Random forests is used for preduction process
+```{r, echo=TRUE}
+control <- trainControl(method = "cv", number = 5)
+fit_rf <- train(classe ~ ., data=training, method = "rf", trControl = control)
+print(fit_rf, digits = 4)
+
+#Predict using test data
+predict_rf <- predict(fit_rf, test)
+conf_rf <-confusionMatrix(predict_rf, test$classe)
+
+(accuracy_rf <- conf_rf$overall[1])
+```
+
+###Result and Test Prediction
+Predict the outcome variable classe for the testing set
+```{r, echo=TRUE}
+(predict(fit_rf, pmlTest))
+```
+
+
+###Conclusion: 
+Random forests with accurancy rate of 0.994 is good model
+
